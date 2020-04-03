@@ -21,6 +21,7 @@ activity <- read.csv("activity.csv")
 ```
 ## Histogram of the total number of steps taken each day
 
+We'll use tapply here for getting the total number of steps taken per day.
 
 ```r
 sums <- tapply(activity$steps, activity$date, FUN = sum , na.rm = TRUE)
@@ -31,6 +32,7 @@ qplot(sums, binwidth = 500, xlab = "Dates", ylab = "Count", main = "Total number
 
 ## Mean and median number of steps taken each day
 
+The basic mean() and median() functions are to be used for achieving the objective.
 
 ```r
 mean(sums)
@@ -47,10 +49,11 @@ median(sums)
 ```
 ## [1] 10395
 ```
+
 ## Time series plot of the average number of steps taken
 
 ```r
-stepsperinterval <- activity %>% group_by(interval) %>% summarize(stepsums = sum(steps, na.rm = TRUE))
+stepsperinterval <- activity %>% group_by(interval) %>% summarize(stepsums = mean(steps, na.rm = TRUE))
 g <- ggplot(stepsperinterval, aes(interval, stepsums))
 g + geom_line() + theme_bw(base_family = "Times") + labs(title = "Time series plot of the average number of steps taken",x = "Daily Intervals", y = "Number of steps")
 ```
@@ -67,7 +70,23 @@ as.integer(stepsperinterval[which.max(stepsperinterval$stepsums),1])
 ```
 ## [1] 835
 ```
+
 ## Imputing missing values
+
+The following approach is applied for imputing the empty data:
+
+1. Here we create two objects called *filled* and *empty*, which in respect to their names consist of completly filled values(no NAs) and completly empty values(all NA values).
+
+2. Then, *filled* is grouped and and summarized in average in terms of interval in a new dataset called *filledmean_per_interval*.
+
+3. Further, using the **ifelse()** function we impute the *empty* dataset in respect to average of its interval.
+
+4. We now rowbind the *filled* and *empty* dataset into one imputed dataset called *imputed*.
+
+5. We here transform the *Dates* variable of the *imputed* dataset for further ease of use. 
+
+6. Finally we order the *imputed* dataset with respect to date, for the sake of better data management.
+
 
 ```r
 filled <- activity[!is.na(activity$steps), ]
@@ -90,9 +109,13 @@ qplot(imputedsums, xlab = "Dates", ylab = "Count", main = "Total number of steps
 
 ## Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
 
+-Here we crate a new variable named *week.status* using the ifelse() function,and the *is.weekend()* function from the chron package, this variable tells whether a aday is a week day or a weekend
+
+-We further create a new data set *imputed_days* which is grouped on the basis of our new variable *week.status* and summarized on terms of average of steps per weekday and weekend.
+
 ```r
 imputed$week.status <- ifelse(is.weekend(imputed$date), yes = "weekend", no = "weekday")
-imputed_days <- imputed %>% group_by(week.status, interval) %>% summarize(average = sum(steps))
+imputed_days <- imputed %>% group_by(week.status, interval) %>% summarize(average = mean(steps))
 g <- ggplot(imputed_days, aes(interval, average))
 g + geom_line() + facet_grid(week.status~.) + theme_bw(base_family = "Times") + labs(title = "Average number of steps taken per 5-minute interval across weekdays and weekends", x = "Daily Intervals", y = "Number of steps")
 ```
